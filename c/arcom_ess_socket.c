@@ -1,12 +1,12 @@
 /* arcom_ess_socket.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.1 2008-03-18 17:04:22 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.2 2008-06-02 16:55:49 cjm Exp $
 */
 /**
  * Basic operations, open close etc. For driving the serial device using an Arcom ethernet-RS232 ESS 
  * serial socket server.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 /**
  * Define BSD Source to get BSD prototypes, including FNDELAY.
@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h> /* TCP_NODELAY constant */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +31,7 @@
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.1 2008-03-18 17:04:22 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.2 2008-06-02 16:55:49 cjm Exp $";
 
 /* external functions */
 
@@ -46,7 +47,9 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 	struct hostent *host;
 	struct sockaddr_in address;
 	int open_errno,retval;
-
+#ifdef ARCOM_ESS_TCP_NODELAY
+	int flag;
+#endif
 	if(handle == NULL)
 	{
 		Arcom_ESS_Error_Number = 412;
@@ -112,6 +115,25 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 		sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Socket_Open: fcntl failed (%d).",open_errno);
 		return FALSE;
 	}
+	/* disable Nagle's algorithm - might stop timeouts */
+#ifdef ARCOM_ESS_TCP_NODELAY
+#if LOGGING > 1
+	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:Set TCP NODELAY.");
+#endif /* LOGGING */
+	flag = 1;
+	retval = setsockopt(Socket_Data.Socket_Fd,            /* socket affected */
+			    IPPROTO_TCP,     /* set option at TCP level */
+			    TCP_NODELAY,     /* name of option */
+			    (char *) &flag,  /* the cast is historical cruft */
+			    sizeof(int));    /* length of option value */
+	if(retval < 0)
+	{
+		open_errno = errno;
+		Arcom_ESS_Error_Number = 411;
+		sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Socket_Open: setsockopt failed (%d).",open_errno);
+		return FALSE;
+	}
+#endif
 #if LOGGING > 0
 	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:Finished.");
 #endif /* LOGGING */
@@ -256,4 +278,7 @@ int Arcom_ESS_Socket_Read(Arcom_ESS_Socket_Handle_T handle,void *message,int mes
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.1  2008/03/18 17:04:22  cjm
+** Initial revision
+**
 */
