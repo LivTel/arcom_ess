@@ -1,11 +1,11 @@
 /* arcom_ess_serial.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_serial.c,v 1.1 2008-03-18 17:04:22 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_serial.c,v 1.2 2008-06-11 15:18:50 cjm Exp $
 */
 /**
  * Basic operations, open close etc.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 /**
  * Define BSD Source to get BSD prototypes, including cfmakeraw.
@@ -49,7 +49,7 @@ struct Serial_Attribute_Struct
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_serial.c,v 1.1 2008-03-18 17:04:22 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_serial.c,v 1.2 2008-06-11 15:18:50 cjm Exp $";
 /**
  * Instance of Serial_Attribute_Struct containing attributes to initialise opened serial connections with:
  * <dl>
@@ -89,6 +89,56 @@ int Arcom_ESS_Serial_Baud_Rate_Set(int baud_rate)
 	Serial_Attribute_Data.Baud_Rate = baud_rate;
 	return TRUE;
 }
+
+/**
+ * Set the input flags to be set for subsequently opened serial handles.
+ * @param flags The input flags to use, default is IGNPAR from termios.h - man tcsetattr to see all of them.
+ * @return TRUE if succeeded, FALSE otherwise.
+ * @see #Serial_Attribute_Data
+ */
+int Arcom_ESS_Serial_Input_Flags_Set(int flags)
+{
+	Serial_Attribute_Data.Input_Flags = flags;
+	return TRUE;
+}
+
+/**
+ * Set the output flags to be set for subsequently opened serial handles.
+ * @param flags The input flags to use, default is 0 from termios.h - man tcsetattr to see all of them.
+ * @return TRUE if succeeded, FALSE otherwise.
+ * @see #Serial_Attribute_Data
+ */
+int Arcom_ESS_Serial_Output_Flags_Set(int flags)
+{
+	Serial_Attribute_Data.Output_Flags = flags;
+	return TRUE;
+}
+
+/**
+ * Set the control flags to be set for subsequently opened serial handles.
+ * @param flags The control flags to use, default is CS8 | CLOCAL | CREAD from termios.h - 
+ *        man tcsetattr to see all of them.
+ * @return TRUE if succeeded, FALSE otherwise.
+ * @see #Serial_Attribute_Data
+ */
+int Arcom_ESS_Serial_Control_Flags_Set(int flags)
+{
+	Serial_Attribute_Data.Control_Flags = flags;
+	return TRUE;
+}
+
+/**
+ * Set the local flags to be set for subsequently opened serial handles.
+ * @param flags The local flags to use, default is 0 from termios.h - man tcsetattr to see all of them.
+ * @return TRUE if succeeded, FALSE otherwise.
+ * @see #Serial_Attribute_Data
+ */
+int Arcom_ESS_Serial_Local_Flags_Set(int flags)
+{
+	Serial_Attribute_Data.Local_Flags = flags;
+	return TRUE;
+}
+
 /**
  * Open the serial device, and configure accordingly,using default in Serial_Attribute_Data.
  * @param handle The address of a Arcom_ESS_Serial_Handle_T structure to fill in.
@@ -369,4 +419,7 @@ int Arcom_ESS_Serial_Read(Arcom_ESS_Serial_Handle_T handle,void *message,int mes
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.1  2008/03/18 17:04:22  cjm
+** Initial revision
+**
 */

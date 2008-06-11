@@ -1,5 +1,5 @@
 /* arcom_ess_serial.h
-** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_serial.h,v 1.1 2008-03-18 17:04:30 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_serial.h,v 1.2 2008-06-11 15:18:48 cjm Exp $
 */
 
 #ifndef ARCOM_ESS_SERIAL_H
@@ -32,6 +32,10 @@ typedef struct Arcom_ESS_Serial_Handle_Struct
 
 /* config functions */
 extern int Arcom_ESS_Serial_Baud_Rate_Set(int baud_rate);
+extern int Arcom_ESS_Serial_Input_Flags_Set(int flags);
+extern int Arcom_ESS_Serial_Output_Flags_Set(int flags);
+extern int Arcom_ESS_Serial_Control_Flags_Set(int flags);
+extern int Arcom_ESS_Serial_Local_Flags_Set(int flags);
 
 extern int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle);
 extern int Arcom_ESS_Serial_Close(Arcom_ESS_Serial_Handle_T *handle);
