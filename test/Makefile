@@ -1,4 +1,4 @@
-# $Header: /home/cjm/cvs/arcom_ess/test/Makefile,v 1.1 2008-03-18 17:04:37 cjm Exp $
+# $Header: /home/cjm/cvs/arcom_ess/test/Makefile,v 1.2 2008-07-22 13:35:51 cjm Exp $
 
 include ../../Makefile.common
 include ../Makefile.common
@@ -28,7 +28,7 @@ $(DOCS): $(SRCS)
 	-$(CDOC) -d $(DOCSDIR) -h $(INCDIR) $(DOCFLAGS) $(SRCS)
 
 depend:
-	makedepend -- $(CFLAGS) -- $(SRCS)
+	makedepend $(MAKEDEPENDFLAGS) -- $(CFLAGS) -- $(SRCS)
 
 clean:
 	$(RM) $(RM_OPTIONS) $(PROGS) $(OBJS) $(TIDY_OPTIONS)
