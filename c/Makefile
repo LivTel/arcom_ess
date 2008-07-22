@@ -1,4 +1,4 @@
-# $Header: /home/cjm/cvs/arcom_ess/c/Makefile,v 1.1 2008-03-18 17:04:34 cjm Exp $
+# $Header: /home/cjm/cvs/arcom_ess/c/Makefile,v 1.2 2008-07-22 13:42:39 cjm Exp $
 
 include			../../Makefile.common
 include			../Makefile.common
@@ -15,7 +15,12 @@ LOGGINGCFLAGS = -DLOGGING=10
 MUTEXCFLAGS = -DARCOM_ESS_MUTEXED=1
 #MUTEXCFLAGS = 
 
-CFLAGS = -g $(CCHECKFLAG) -I$(INCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR) -L$(LT_LIB_HOME) $(MUTEXCFLAGS) $(LOGGINGCFLAGS)
+# Disable Nagle's algorithm?
+#TCP_NODELAY = -DARCOM_ESS_TCP_NODELAY=1
+TCP_NODELAY = 
+
+CFLAGS = -g $(CCHECKFLAG) -I$(INCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR) -L$(LT_LIB_HOME) $(MUTEXCFLAGS) \
+	$(TCP_NODELAY) $(LOGGINGCFLAGS)
 
 LINTFLAGS = -I$(INCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR)
 DOCFLAGS = -static
@@ -65,10 +70,10 @@ checkin:
 	-(cd $(INCDIR); $(CI) $(CI_OPTIONS) $(HEADERS);)
 
 staticdepend:
-	makedepend -- $(CFLAGS) -- $(SRCS)
+	makedepend $(MAKEDEPENDFLAGS) -- $(CFLAGS) -- $(SRCS)
 
 depend:
-	makedepend -- $(CFLAGS) -- $(JAVASRCS)
+	makedepend $(MAKEDEPENDFLAGS) -- $(CFLAGS) -- $(JAVASRCS)
 
 lint:
 	$(LINT)	$(LINTFLAGS) $(JAVASRCS)
@@ -85,4 +90,7 @@ backup: tidy
 
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.1  2008/03/18 17:04:34  cjm
+# Initial revision
+#
 #
