@@ -1,13 +1,21 @@
 /* arcom_ess_socket.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.2 2008-06-02 16:55:49 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.3 2008-10-29 14:43:54 cjm Exp $
 */
 /**
  * Basic operations, open close etc. For driving the serial device using an Arcom ethernet-RS232 ESS 
  * serial socket server.
  * @author Chris Mottram
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
+/**
+ * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
+ */
+#define _POSIX_SOURCE 1
+/**
+ * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
+ */
+#define _POSIX_C_SOURCE 199309L
 /**
  * Define BSD Source to get BSD prototypes, including FNDELAY.
  */
@@ -24,22 +32,37 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <termios.h> /* POSIX terminal control definitions */
+#include <time.h>
 #include <unistd.h> /* UNIX standard function definitions */
 #include "arcom_ess_general.h"
 #include "arcom_ess_socket.h"
+
+/* internal hash defines */
+/**
+ * How long to pause between read attempts in milliseconds.
+ * Note this time depends on the controlled device response time, 
+ * but also on the Demark/Timeout config in the Arcom ESS
+ * (currently 100/200). 
+ * @see #SOCKET_READ_TIMEOUT_COUNT
+ * @see #Arcom_ESS_Socket_Read
+ */
+#define SOCKET_READ_PAUSE_MS         (100)
+
 /* internal variables */
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.2 2008-06-02 16:55:49 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.3 2008-10-29 14:43:54 cjm Exp $";
 
 /* external functions */
 
 /**
- * Open the socket device, and configure accordingly.
+ * Open the socket device, and configure accordingly. FInish with a call to Arcom_ESS_Socket_Flush to flush
+ * out any residual data on the socket.
  * @param handle A pointer to an instance of Arcom_ESS_Socket_Handle_T containing the address and port number to open.
  * @return TRUE if succeeded, FALSE otherwise.
  * @see #Arcom_ESS_Socket_Handle_T
+ * @see #Arcom_ESS_Socket_Flush
  */
 int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 {
@@ -134,6 +157,9 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 		return FALSE;
 	}
 #endif
+	/* flush any unread data from the Arcom ESS */
+	if(!Arcom_ESS_Socket_Flush(*handle))
+		return FALSE;
 #if LOGGING > 0
 	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:Finished.");
 #endif /* LOGGING */
@@ -276,8 +302,74 @@ int Arcom_ESS_Socket_Read(Arcom_ESS_Socket_Handle_T handle,void *message,int mes
 	return TRUE;
 }
 
+/**
+ * Try to flush any unread data from the file descriptor by repeated read's until read returns 0.
+ * We wait a small delay before reading in case  some data is in the process of arriving at the Arcom ESS.
+ * @param handle A pointer to an instance of DArcom_ESS_Socket_Handle_T containing the connection info.
+ * @see #Arcom_ESS_Socket_Handle_T
+ * @see #SOCKET_READ_PAUSE_MS
+ * @see arcom_ess_general.html#ARCOM_ESS_ONE_MILLISECOND_NS
+ * @see arcom_ess_general.html#Arcom_ESS_Error
+ * @see arcom_ess_general.html#Arcom_ESS_Log
+ */
+int Arcom_ESS_Socket_Flush(Arcom_ESS_Socket_Handle_T handle)
+{
+	struct timespec sleep_time;
+	char message_buff[255];
+	int retval,read_errno,sleep_errno;
+
+#if LOGGING > 0
+	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Flush:Started.");
+#endif /* LOGGING */
+	/* keep reading until read returns 0 */
+	retval = 1;
+	while(retval > 0)
+	{
+		/* sleep a while */
+		sleep_time.tv_sec = (SOCKET_READ_PAUSE_MS/1000);
+		sleep_time.tv_nsec = (SOCKET_READ_PAUSE_MS%1000)*ARCOM_ESS_ONE_MILLISECOND_NS;
+		retval = nanosleep(&sleep_time,NULL);
+		if(retval != 0)
+		{
+			sleep_errno = errno;
+			Arcom_ESS_Error_Number = 413;
+			sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Socket_Flush:nanosleep failed(%d):%s.",retval,
+				strerror(sleep_errno));
+			Arcom_ESS_Error();
+			/* not a fatal error, don't return */
+		}
+		/* try and read something from the file descriptor */
+		retval = read(handle.Socket_Fd,message_buff,255);
+		if(retval < 0)
+		{
+			read_errno = errno;
+			/* if the errno is EAGAIN, a non-blocking read has failed to return any data. */
+			if(read_errno != EAGAIN)
+			{
+				Arcom_ESS_Error_Number = 414;
+				sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Socket_Flush: failed (%d,%d,%d):%s.",
+					handle.Socket_Fd,retval,read_errno,strerror(read_errno));
+				return FALSE;
+			}
+			else
+				retval = 0; /* terminate the flush - no more data to read */
+		}
+#if LOGGING > 0
+		Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Flush: read returned %d bytes.",
+				     retval);
+#endif /* LOGGING */
+	}/* end while */
+#if LOGGING > 0
+	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Flush:Finished.");
+#endif /* LOGGING */
+	return TRUE;
+}
+
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.2  2008/06/02 16:55:49  cjm
+** Added conditionally compiled TCP_NODELAY software.
+**
 ** Revision 1.1  2008/03/18 17:04:22  cjm
 ** Initial revision
 **
