@@ -1,11 +1,11 @@
 /* arcom_ess_general.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_general.c,v 1.1 2008-03-18 17:04:22 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_general.c,v 1.2 2008-10-29 14:43:54 cjm Exp $
 */
 /**
  * Error and Log handlers.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -72,7 +72,7 @@ char Arcom_ESS_Error_String[ARCOM_ESS_ERROR_LENGTH];
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_general.c,v 1.1 2008-03-18 17:04:22 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_general.c,v 1.2 2008-10-29 14:43:54 cjm Exp $";
 /**
  * The instance of General_Struct that contains local data for this module.
  * This is statically initialised to the following:
@@ -199,15 +199,25 @@ void Arcom_ESS_Log(int level,char *string)
 {
 /* If the string is NULL, don't log. */
 	if(string == NULL)
+	{
+		/*fprintf(stdout,"Arcom_ESS_Log:String was NULL.\n");*/
 		return;
+	}
 /* If there is no log handler, return */
 	if(General_Data.Log_Handler == NULL)
+	{
+		/*fprintf(stdout,"Arcom_ESS_Log:Log_Handler was NULL when handling '%s'.\n",string);*/
 		return;
+	}
 /* If there's a log filter, check it returns TRUE for this message */
 	if(General_Data.Log_Filter != NULL)
 	{
 		if(General_Data.Log_Filter(level,string) == FALSE)
+		{
+			/*fprintf(stdout,"Arcom_ESS_Log:Filter was false when handling '%s' with level %d.\n",
+			**	string,level);*/
 			return;
+		}
 	}
 /* We can log the message */
 	(*General_Data.Log_Handler)(level,string);
@@ -255,6 +265,7 @@ void Arcom_ESS_Log_Handler_Stdout(int level,char *string)
 void Arcom_ESS_Set_Log_Filter_Level(int level)
 {
 	General_Data.Log_Filter_Level = level;
+	/*fprintf(stdout,"Arcom_ESS_Set_Log_Filter_Level:Log level set to %d.\n",level);*/
 }
 
 /**
@@ -285,4 +296,7 @@ int Arcom_ESS_Log_Filter_Level_Bitwise(int level,char *string)
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.1  2008/03/18 17:04:22  cjm
+** Initial revision
+**
 */
