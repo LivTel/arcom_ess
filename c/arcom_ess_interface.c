@@ -1,12 +1,12 @@
 /* arcom_ess_interface.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_interface.c,v 1.1 2008-03-18 17:04:22 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_interface.c,v 1.2 2008-10-29 14:43:54 cjm Exp $
 */
 /**
  * Serial device independant interface routines.
  * Set the interface to be either Serial or Socket and Open/Close/Read/Write calls are directed as appropriate.
  * @author Chris Mottram
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -66,7 +66,7 @@ struct Arcom_ESS_Interface_Handle_Struct
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_interface.c,v 1.1 2008-03-18 17:04:22 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_interface.c,v 1.2 2008-10-29 14:43:54 cjm Exp $";
 
 /* =======================================
 **  external functions 
@@ -324,6 +324,43 @@ int Arcom_ESS_Interface_Read(Arcom_ESS_Interface_Handle_T *handle,void* message,
 	return TRUE;
 }
 
+/**
+ * Try to flush any unread data from the file descriptor by repeated read's until read returns 0.
+ * We wait a small delay before reading in case  some data is in the process of arriving.
+ * The flushing is currently only implemented for socket connections.
+ * @param handle The handle specifying which connection to flush.
+ * @return The routine returns TRUE on success and FALSE on failure.
+ * @see #Arcom_ESS_Interface_Handle_T
+ * @see arcom_ess_socket.html#Arcom_ESS_Socket_Flush
+ * @see arcom_ess_serial.html#Arcom_ESS_Serial_Read
+ */
+int Arcom_ESS_Interface_Flush(Arcom_ESS_Interface_Handle_T *handle)
+{
+	if(handle == NULL)
+	{
+		Arcom_ESS_Error_Number = 122;
+		sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Interface_Flush: handle was NULL.");
+		return FALSE;
+	}
+	/* call the device specific routine */
+	switch(handle->Interface_Device)
+	{
+		case ARCOM_ESS_INTERFACE_DEVICE_SERIAL:
+			/* do nothing for flush */
+			break;
+		case ARCOM_ESS_INTERFACE_DEVICE_SOCKET:
+			if(!Arcom_ESS_Socket_Flush(handle->Handle.Socket))
+				return FALSE;
+			break;
+		default:
+			Arcom_ESS_Error_Number = 123;
+			sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Interface_Flush failed:Illegal device selected(%d).",
+				handle->Interface_Device);
+			return FALSE;
+	}
+	return TRUE;
+}
+
 #ifdef ARCOM_ESS_MUTEXED
 /**
  * Routine to lock the comms access mutex. This will block until the mutex has been acquired,
@@ -384,4 +421,7 @@ int Arcom_ESS_Interface_Mutex_Unlock(Arcom_ESS_Interface_Handle_T *handle)
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.1  2008/03/18 17:04:22  cjm
+** Initial revision
+**
 */

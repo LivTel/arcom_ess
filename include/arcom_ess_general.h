@@ -1,5 +1,5 @@
 /* arcom_ess_general.h
-** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_general.h,v 1.1 2008-03-18 17:04:30 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_general.h,v 1.2 2008-10-29 14:45:35 cjm Exp $
 */
 
 #ifndef ARCOM_ESS_GENERAL_H
@@ -23,21 +23,25 @@
  * How long the error string is.
  */
 #define ARCOM_ESS_ERROR_LENGTH (1024)
+/**
+ * One millosecond in nanoseconds (1000000).
+ */
+#define ARCOM_ESS_ONE_MILLISECOND_NS   (1000000)
 
 /**
  * Value to pass into logging calls, used for all low level serial code logging.
- * The Arcom ESS library is allocated bits 30..31.
+ * The Arcom ESS library is allocated bits 20..21.
  * This constant should be the same as that defined in ngat.serial.arcomess.ArcomESS.java.
  * @see #Arcom_ESS_Log
  */
-#define ARCOM_ESS_LOG_BIT_SERIAL	(1<<30)
+#define ARCOM_ESS_LOG_BIT_SERIAL	(1<<20)
 /**
  * Value to pass into logging calls, used for all low level socket code logging.
- * The Arcom ESS library is allocated bits 30..31.
+ * The Arcom ESS library is allocated bits 20..21.
  * This constant should be the same as that defined in ngat.serial.arcomess.ArcomESS.java.
  * @see #Arcom_ESS_Log
  */
-#define ARCOM_ESS_LOG_BIT_SOCKET	(1<<31)
+#define ARCOM_ESS_LOG_BIT_SOCKET	(1<<21)
 
 /**
  * Macro to check whether the parameter is either TRUE or FALSE.
