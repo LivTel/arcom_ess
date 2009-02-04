@@ -1,4 +1,4 @@
-# $Header: /home/cjm/cvs/arcom_ess/test/Makefile,v 1.2 2008-07-22 13:35:51 cjm Exp $
+# $Header: /home/cjm/cvs/arcom_ess/test/Makefile,v 1.3 2009-02-04 11:24:26 cjm Exp $
 
 include ../../Makefile.common
 include ../Makefile.common
@@ -8,7 +8,7 @@ TESTDIR 	= test
 BINDIR 		= $(ARCOM_ESS_BIN_HOME)/$(TESTDIR)/$(HOSTTYPE)
 DOCSDIR 	= $(ARCOM_ESS_DOC_HOME)/$(TESTDIR)
 
-CFLAGS 		= -g -I$(INCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR)
+CFLAGS 		= -g -I$(INCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR) $(LOG_UDP_CFLAGS)
 DOCFLAGS 	= -static
 
 SRCS 		= arcom_ess_test.c

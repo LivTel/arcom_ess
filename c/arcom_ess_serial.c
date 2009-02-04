@@ -1,11 +1,11 @@
 /* arcom_ess_serial.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_serial.c,v 1.2 2008-06-11 15:18:50 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_serial.c,v 1.3 2009-02-04 11:23:50 cjm Exp $
 */
 /**
  * Basic operations, open close etc.
  * @author Chris Mottram
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 /**
  * Define BSD Source to get BSD prototypes, including cfmakeraw.
@@ -18,6 +18,7 @@
 #include <fcntl.h>   /* File control definitions */
 #include <termios.h> /* POSIX terminal control definitions */
 #include <unistd.h>  /* UNIX standard function definitions */
+#include "log_udp.h"
 #include "arcom_ess_general.h"
 #include "arcom_ess_serial.h"
 
@@ -49,7 +50,7 @@ struct Serial_Attribute_Struct
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_serial.c,v 1.2 2008-06-11 15:18:50 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_serial.c,v 1.3 2009-02-04 11:23:50 cjm Exp $";
 /**
  * Instance of Serial_Attribute_Struct containing attributes to initialise opened serial connections with:
  * <dl>
@@ -158,7 +159,7 @@ int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle)
 	}
 	/* Open serial device, read/write, not a controlling terminal, don't wait for DCD signal line. */
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Open(%s).",handle->Device_Name);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Serial_Open(%s).",handle->Device_Name);
 #endif /* LOGGING */
 	handle->Serial_Fd = open(handle->Device_Name, O_RDWR | O_NOCTTY | O_NDELAY);
 	if(handle->Serial_Fd < 0)
@@ -170,7 +171,7 @@ int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle)
 		return FALSE;
 	}
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Open with FD %d.",handle->Serial_Fd);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Serial_Open with FD %d.",handle->Serial_Fd);
 #endif /* LOGGING */
 	/* make non-blocking */
 	/* diddly */
@@ -219,7 +220,7 @@ int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle)
 	handle->Serial_Options.c_cc[VMIN]=0;
 	handle->Serial_Options.c_cc[VTIME]=0;
 #if LOGGING > 2
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,
 	      "Arcom_ESS_Serial_Open:New Attr:Input:%#x,Output:%#x,Local:%#x,Control:%#x,Min:%c,Time:%c.",
 		       handle->Serial_Options.c_iflag,handle->Serial_Options.c_oflag,
 		       handle->Serial_Options.c_lflag,handle->Serial_Options.c_cflag,
@@ -227,7 +228,7 @@ int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle)
 #endif /* LOGGING */
  	/* set new options */
 #if LOGGING > 1
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Open:Setting serial options.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Open:Setting serial options.");
 #endif /* LOGGING */
 	tcflush(handle->Serial_Fd, TCIFLUSH);
 	retval = tcsetattr(handle->Serial_Fd,TCSANOW,&(handle->Serial_Options));
@@ -240,7 +241,7 @@ int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle)
 	}
 	/* re-get current serial options to see what was set */
 #if LOGGING > 1
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Open:Re-Getting new serial options.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Open:Re-Getting new serial options.");
 #endif /* LOGGING */
 	retval = tcgetattr(handle->Serial_Fd,&(handle->Serial_Options));
 	if(retval != 0)
@@ -252,7 +253,7 @@ int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle)
 		return FALSE;
 	}
 #if LOGGING > 2
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,
 	      "Arcom_ESS_Serial_Open:New Get Attr:Input:%#x,Output:%#x,Local:%#x,Control:%#x,Min:%c,Time:%c.",
 		       handle->Serial_Options.c_iflag,handle->Serial_Options.c_oflag,
 		       handle->Serial_Options.c_lflag,handle->Serial_Options.c_cflag,
@@ -261,7 +262,7 @@ int Arcom_ESS_Serial_Open(Arcom_ESS_Serial_Handle_T *handle)
 	/* clean I & O device */
 	tcflush(handle->Serial_Fd,TCIOFLUSH);
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Open:Finished.");
+	Arcom_ESS_Log(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Serial_Open:Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -277,14 +278,14 @@ int Arcom_ESS_Serial_Close(Arcom_ESS_Serial_Handle_T *handle)
 	int retval,close_errno;
 
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Close:Started.");
+	Arcom_ESS_Log(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Serial_Close:Started.");
 #endif /* LOGGING */
 #if LOGGING > 1
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Close:Flushing serial line.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Close:Flushing serial line.");
 #endif /* LOGGING */
 	tcflush(handle->Serial_Fd, TCIFLUSH);
 #if LOGGING > 1
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Close:Resetting serial options.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Close:Resetting serial options.");
 #endif /* LOGGING */
 	retval = tcsetattr(handle->Serial_Fd,TCSANOW,&(handle->Serial_Options_Saved));
 	if(retval != 0)
@@ -295,7 +296,7 @@ int Arcom_ESS_Serial_Close(Arcom_ESS_Serial_Handle_T *handle)
 		return FALSE;
 	}
 #if LOGGING > 1
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Close:Closing file descriptor.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Close:Closing file descriptor.");
 #endif /* LOGGING */
 	retval = close(handle->Serial_Fd);
 	if(retval < 0)
@@ -307,7 +308,7 @@ int Arcom_ESS_Serial_Close(Arcom_ESS_Serial_Handle_T *handle)
 		return FALSE;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Close:Finished.");
+	Arcom_ESS_Log(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Serial_Close:Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -331,11 +332,11 @@ int Arcom_ESS_Serial_Write(Arcom_ESS_Serial_Handle_T handle,void *message,size_t
 		return FALSE;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Write(%d bytes).",message_length);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Write(%d bytes).",message_length);
 #endif /* LOGGING */
 	retval = write(handle.Serial_Fd,message,message_length);
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Write returned %d.",retval);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Write returned %d.",retval);
 #endif /* LOGGING */
 	if(retval != message_length)
 	{
@@ -346,7 +347,7 @@ int Arcom_ESS_Serial_Write(Arcom_ESS_Serial_Handle_T handle,void *message,size_t
 		return FALSE;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Write:Finished.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Write:Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -383,11 +384,11 @@ int Arcom_ESS_Serial_Read(Arcom_ESS_Serial_Handle_T handle,void *message,int mes
 	if(bytes_read != NULL)
 		(*bytes_read) = 0;
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Read:Max length %d.",message_length);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Read:Max length %d.",message_length);
 #endif /* LOGGING */
 	retval = read(handle.Serial_Fd,message,message_length);
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Read:returned %d.",retval);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Read:returned %d.",retval);
 #endif /* LOGGING */
 	if(retval < 0)
 	{
@@ -412,13 +413,16 @@ int Arcom_ESS_Serial_Read(Arcom_ESS_Serial_Handle_T handle,void *message,int mes
 			(*bytes_read) = retval;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SERIAL,"Arcom_ESS_Serial_Read:returned %d of %d.",retval,message_length);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Serial_Read:returned %d of %d.",retval,message_length);
 #endif /* LOGGING */
 	return TRUE;
 }
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.2  2008/06/11 15:18:50  cjm
+** Added Arcom_ESS_Serial_Input_Flags_Set/ Arcom_ESS_Serial_Output_Flags_Set/ Arcom_ESS_Serial_Control_Flags_Set/ Arcom_ESS_Serial_Local_Flags_Set.
+**
 ** Revision 1.1  2008/03/18 17:04:22  cjm
 ** Initial revision
 **

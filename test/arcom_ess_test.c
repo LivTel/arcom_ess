@@ -1,10 +1,11 @@
 /* arcom_ess_test.c
-** $Header: /home/cjm/cvs/arcom_ess/test/arcom_ess_test.c,v 1.2 2008-07-22 13:42:17 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/test/arcom_ess_test.c,v 1.3 2009-02-04 11:24:22 cjm Exp $
 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+#include "log_udp.h"
 #include "arcom_ess_general.h"
 #include "arcom_ess_interface.h"
 
@@ -12,18 +13,18 @@
  * This program tests writing to and reading from a serial connection, which may go via 
  * an Arcom ESS.
  * @author $Author: cjm $
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 /**
  * Default bit-wise log level.
  */
-#define DEFAULT_LOG_LEVEL       (ARCOM_ESS_LOG_BIT_SERIAL|ARCOM_ESS_LOG_BIT_SOCKET)
+#define DEFAULT_LOG_LEVEL       (LOG_VERBOSITY_VERY_VERBOSE)
 
 /* internal variables */
 /**
  * Revision control system identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_test.c,v 1.2 2008-07-22 13:42:17 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_test.c,v 1.3 2009-02-04 11:24:22 cjm Exp $";
 /**
  * Variable holding which type of device we are using to communicate with the PLC.
  * @see ../cdocs/arcom_ess_interface.html#ARCOM_ESS_INTERFACE_DEVICE_ID
@@ -318,6 +319,9 @@ static void Help(void)
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.2  2008/07/22 13:42:17  cjm
+** Added stdlib.h/string.h.
+**
 ** Revision 1.1  2008/03/18 17:04:36  cjm
 ** Initial revision
 **

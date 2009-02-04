@@ -1,12 +1,12 @@
 /* arcom_ess_socket.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.3 2008-10-29 14:43:54 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.4 2009-02-04 11:23:50 cjm Exp $
 */
 /**
  * Basic operations, open close etc. For driving the serial device using an Arcom ethernet-RS232 ESS 
  * serial socket server.
  * @author Chris Mottram
- * @version $Revision: 1.3 $
+ * @version $Revision: 1.4 $
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -34,6 +34,7 @@
 #include <termios.h> /* POSIX terminal control definitions */
 #include <time.h>
 #include <unistd.h> /* UNIX standard function definitions */
+#include "log_udp.h"
 #include "arcom_ess_general.h"
 #include "arcom_ess_socket.h"
 
@@ -52,7 +53,7 @@
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.3 2008-10-29 14:43:54 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.4 2009-02-04 11:23:50 cjm Exp $";
 
 /* external functions */
 
@@ -81,7 +82,7 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 	}
 	/* Open socket. */
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open(%s,%d).",handle->Address,
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Socket_Open(%s,%d).",handle->Address,
 		       handle->Port_Number);
 #endif /* LOGGING */
 	handle->Socket_Fd = socket(PF_INET,SOCK_STREAM,0);
@@ -94,12 +95,12 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 		return FALSE;
 	}
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open with FD %d.",
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Socket_Open with FD %d.",
 		       handle->Socket_Fd);
 #endif /* LOGGING */
 	/* find host address */
 #if LOGGING > 1
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:Find host address.");
+	Arcom_ESS_Log(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Socket_Open:Find host address.");
 #endif /* LOGGING */
 	host = gethostbyname(handle->Address);
 	if(host == NULL)
@@ -115,7 +116,7 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 	address.sin_addr.s_addr = inet_addr(host_ip);
 	address.sin_port = htons(handle->Port_Number);
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:trying to connect to %s[%s:%d].",
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Socket_Open:trying to connect to %s[%s:%d].",
 		       handle->Address,host_ip,handle->Port_Number);
 #endif /* LOGGING */
 	if(connect(handle->Socket_Fd,(struct sockaddr *)&(address),sizeof(address)) == -1)
@@ -128,7 +129,7 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 	}
 	/* make non-blocking */
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:Set non-blocking.");
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Open:Set non-blocking.");
 #endif /* LOGGING */
 	retval = fcntl(handle->Socket_Fd, F_SETFL, FNDELAY);
 	if(retval != 0)
@@ -141,7 +142,7 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 	/* disable Nagle's algorithm - might stop timeouts */
 #ifdef ARCOM_ESS_TCP_NODELAY
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:Set TCP NODELAY.");
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Open:Set TCP NODELAY.");
 #endif /* LOGGING */
 	flag = 1;
 	retval = setsockopt(Socket_Data.Socket_Fd,            /* socket affected */
@@ -161,7 +162,7 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 	if(!Arcom_ESS_Socket_Flush(*handle))
 		return FALSE;
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Open:Finished.");
+	Arcom_ESS_Log(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Socket_Open:Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -177,10 +178,10 @@ int Arcom_ESS_Socket_Close(Arcom_ESS_Socket_Handle_T *handle)
 	int retval,close_errno;
 
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Close:Started.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Close:Started.");
 #endif /* LOGGING */
 #if LOGGING > 1
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Close:Closing file descriptor.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Close:Closing file descriptor.");
 #endif /* LOGGING */
 	retval = close(handle->Socket_Fd);
 	if(retval < 0)
@@ -192,7 +193,7 @@ int Arcom_ESS_Socket_Close(Arcom_ESS_Socket_Handle_T *handle)
 		return FALSE;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Close:Finished.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Close:Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -216,11 +217,11 @@ int Arcom_ESS_Socket_Write(Arcom_ESS_Socket_Handle_T handle,void *message,size_t
 		return FALSE;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Write(%d bytes).",message_length);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Write(%d bytes).",message_length);
 #endif /* LOGGING */
 	retval = write(handle.Socket_Fd,message,message_length);
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Write returned %d.",retval);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Write returned %d.",retval);
 #endif /* LOGGING */
 	if(retval != message_length)
 	{
@@ -231,7 +232,7 @@ int Arcom_ESS_Socket_Write(Arcom_ESS_Socket_Handle_T handle,void *message,size_t
 		return FALSE;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Write:Finished.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Write:Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -268,11 +269,11 @@ int Arcom_ESS_Socket_Read(Arcom_ESS_Socket_Handle_T handle,void *message,int mes
 	if(bytes_read != NULL)
 		(*bytes_read) = 0;
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Read:Max length %d.",message_length);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Read:Max length %d.",message_length);
 #endif /* LOGGING */
 	retval = read(handle.Socket_Fd,message,message_length);
 #if LOGGING > 1
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Read:returned %d.",retval);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Read:returned %d.",retval);
 #endif /* LOGGING */
 	if(retval < 0)
 	{
@@ -297,7 +298,7 @@ int Arcom_ESS_Socket_Read(Arcom_ESS_Socket_Handle_T handle,void *message,int mes
 			(*bytes_read) = retval;
 	}
 #if LOGGING > 0
-	Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Read:returned %d bytes.",retval);
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Read:returned %d bytes.",retval);
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -319,7 +320,7 @@ int Arcom_ESS_Socket_Flush(Arcom_ESS_Socket_Handle_T handle)
 	int retval,read_errno,sleep_errno;
 
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Flush:Started.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Flush:Started.");
 #endif /* LOGGING */
 	/* keep reading until read returns 0 */
 	retval = 1;
@@ -355,18 +356,21 @@ int Arcom_ESS_Socket_Flush(Arcom_ESS_Socket_Handle_T handle)
 				retval = 0; /* terminate the flush - no more data to read */
 		}
 #if LOGGING > 0
-		Arcom_ESS_Log_Format(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Flush: read returned %d bytes.",
+		Arcom_ESS_Log_Format(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Flush: read returned %d bytes.",
 				     retval);
 #endif /* LOGGING */
 	}/* end while */
 #if LOGGING > 0
-	Arcom_ESS_Log(ARCOM_ESS_LOG_BIT_SOCKET,"Arcom_ESS_Socket_Flush:Finished.");
+	Arcom_ESS_Log(LOG_VERBOSITY_VERY_VERBOSE,"Arcom_ESS_Socket_Flush:Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.3  2008/10/29 14:43:54  cjm
+** Added socket flushing.
+**
 ** Revision 1.2  2008/06/02 16:55:49  cjm
 ** Added conditionally compiled TCP_NODELAY software.
 **
