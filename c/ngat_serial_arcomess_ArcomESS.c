@@ -1,6 +1,6 @@
 /* ngat_serial_arcomess_ArcomESS.c
 ** implementation of Java Class ngat.serial.arcomess.ArcomESS native interfaces.
-** $Header: /home/cjm/cvs/arcom_ess/c/ngat_serial_arcomess_ArcomESS.c,v 1.1 2008-03-18 17:04:22 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/ngat_serial_arcomess_ArcomESS.c,v 1.2 2009-02-05 11:38:10 cjm Exp $
 */
 /**
  * ngat_serial_arcomess_ArcomESS.c is the 'glue' between libarcom_ess, 
@@ -8,7 +8,7 @@
  * a Java Class to drive the server. ArcomESS specifically
  * contains all the native C routines corresponding to native methods in Java.
  * @author Chris Mottram LJMU
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes
@@ -56,7 +56,7 @@ struct Handle_Map_Struct
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: ngat_serial_arcomess_ArcomESS.c,v 1.1 2008-03-18 17:04:22 cjm Exp $";
+static char rcsid[] = "$Id: ngat_serial_arcomess_ArcomESS.c,v 1.2 2009-02-05 11:38:10 cjm Exp $";
 
 /**
  * Copy of the java virtual machine pointer, used for logging back up to the Java layer from C.
@@ -124,12 +124,12 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
  * This takes the supplied logger object reference and stores it in the logger variable as a global reference.
  * The log method ID is also retrieved and stored.
  * The libarcom_ess's log handler is set to the JNI routine ArcomESS_Log_Handler.
- * The libarcom_ess's log filter function is set bitwise.
+ * The libarcom_ess's log filter function is set absolute.
  * @param l The ArcomESS's "ngat.serial.arcomess.ArcomESS" logger.
  * @see #ArcomESS_Log_Handler
  * @see #logger
  * @see #log_method_id
- * @see arcom_ess_general.html#Arcom_ESS_Log_Filter_Level_Bitwise
+ * @see arcom_ess_general.html#Arcom_ESS_Log_Filter_Level_Absolute
  * @see arcom_ess_general.html#Arcom_ESS_Set_Log_Handler_Function
  * @see arcom_ess_general.html#Arcom_ESS_Set_Log_Filter_Function
  */
@@ -157,8 +157,8 @@ JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_initialiseLoggerRefere
 	}
 	/* Make the C layer log back to the Java logger, using ArcomESS_Log_Handler JNI routine.  */
 	Arcom_ESS_Set_Log_Handler_Function(ArcomESS_Log_Handler);
-	/* Make the filtering bitwise, as expected by the C layer */
-	Arcom_ESS_Set_Log_Filter_Function(Arcom_ESS_Log_Filter_Level_Bitwise);
+	/* Make the filtering absolute, as expected by the C layer */
+	Arcom_ESS_Set_Log_Filter_Function(Arcom_ESS_Log_Filter_Level_Absolute);
 }
 
 /**
@@ -728,4 +728,7 @@ int ArcomESS_Handle_Map_Find(JNIEnv *env,jobject instance,Arcom_ESS_Interface_Ha
 }
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.1  2008/03/18 17:04:22  cjm
+** Initial revision
+**
 */
