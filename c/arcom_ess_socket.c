@@ -1,12 +1,12 @@
 /* arcom_ess_socket.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.4 2009-02-04 11:23:50 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_socket.c,v 1.5 2010-11-24 11:47:17 cjm Exp $
 */
 /**
  * Basic operations, open close etc. For driving the serial device using an Arcom ethernet-RS232 ESS 
  * serial socket server.
  * @author Chris Mottram
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -53,9 +53,14 @@
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.4 2009-02-04 11:23:50 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.5 2010-11-24 11:47:17 cjm Exp $";
 
-/* external functions */
+/* internal functions */
+static int Socket_Get_Host_By_Name(const char *name,char **host_addr_zero);
+
+/* ----------------------------------------------------------------
+** external functions 
+** ---------------------------------------------------------------- */
 
 /**
  * Open the socket device, and configure accordingly. FInish with a call to Arcom_ESS_Socket_Flush to flush
@@ -64,12 +69,13 @@ static char rcsid[] = "$Id: arcom_ess_socket.c,v 1.4 2009-02-04 11:23:50 cjm Exp
  * @return TRUE if succeeded, FALSE otherwise.
  * @see #Arcom_ESS_Socket_Handle_T
  * @see #Arcom_ESS_Socket_Flush
+ * @see #Socket_Get_Host_By_Name
  */
 int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 {
 	char host_ip[256];
-	struct hostent *host;
 	struct sockaddr_in address;
+	char *host_address_ptr = NULL;
 	int open_errno,retval;
 #ifdef ARCOM_ESS_TCP_NODELAY
 	int flag;
@@ -102,16 +108,11 @@ int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle)
 #if LOGGING > 1
 	Arcom_ESS_Log(LOG_VERBOSITY_INTERMEDIATE,"Arcom_ESS_Socket_Open:Find host address.");
 #endif /* LOGGING */
-	host = gethostbyname(handle->Address);
-	if(host == NULL)
-	{
-		open_errno = errno;
-		Arcom_ESS_Error_Number = 402;
-		sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Socket_Open: Address %s failed to gethostbyname (%d).",
-			handle->Address,open_errno);
+	if(!Socket_Get_Host_By_Name(handle->Address,&host_address_ptr))
 		return FALSE;
-	}
-	strcpy(host_ip,inet_ntoa(*(struct in_addr *)(host->h_addr_list[0])));
+	strcpy(host_ip,inet_ntoa(*(struct in_addr *)(host_address_ptr)));
+	if(host_address_ptr != NULL)
+		free(host_address_ptr);
 	address.sin_family = PF_INET;
 	address.sin_addr.s_addr = inet_addr(host_ip);
 	address.sin_port = htons(handle->Port_Number);
@@ -366,8 +367,121 @@ int Arcom_ESS_Socket_Flush(Arcom_ESS_Socket_Handle_T handle)
 	return TRUE;
 }
 
+/* ----------------------------------------------------------------
+** internal functions 
+** ---------------------------------------------------------------- */
+/**
+ * Internal routine to get a host address from it's name. This is traditionally handled by a call
+ * to gethostbyname. Unfortunately that routine is not re-entrant because the pointer it returns
+ * is to a block of reusable memory in glibc, so a second call to gethostbyname from another thread
+ * in the process can lead to the pointers returned from the first call being freed leading to SIGSEGV.
+ * This routine wraps gethostbyname_r, the re-entrant version of that routine.
+ * @param name The hostname to translate. This should be allocated, zero-terminated and non-null.
+ * @param host_addr_zero The address of a pointer  to an array of chars. This routine will allocate
+ *       some memory and fill it with a null-terminated, network byte ordered copy of the first hostent host address
+ *       list entry returned by gethostbyname_r. NULL can be returned on failure.
+ * @return The routine returns TRUE on success and FALSE on failure.
+ */
+static int Socket_Get_Host_By_Name(const char *name,char **host_addr_zero)
+{
+	struct hostent hostbuf,*hp = NULL;
+	size_t hstbuflen;
+	char *tmphstbuf = NULL;
+	int retval;
+	int herr;
+
+	Arcom_ESS_Error_Number = 0;
+	if(name == NULL)
+	{
+		Arcom_ESS_Error_Number = 415;
+		sprintf(Arcom_ESS_Error_String,"Socket_Get_Host_By_Name:name was NULL.");
+		return FALSE;
+	}
+	if(host_addr_zero == NULL)
+	{
+		Arcom_ESS_Error_Number = 416;
+		sprintf(Arcom_ESS_Error_String,"Socket_Get_Host_By_Name:host_addr_zero was NULL.");
+		return FALSE;
+	}
+#if LOGGING > 5
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERBOSE,"Socket_Get_Host_By_Name(%s) Started.",name);
+#endif /* LOGGING */
+	hstbuflen = 1024;
+	/* Allocate buffer, remember to free it to avoid memory leakage.  */
+	tmphstbuf = malloc(hstbuflen);
+	if(tmphstbuf == NULL)
+	{
+		Arcom_ESS_Error_Number = 417;
+		sprintf(Arcom_ESS_Error_String,"Socket_Get_Host_By_Name:memory allocation of tmphstbuf failed(%d).",
+			hstbuflen);
+		return FALSE;
+
+	}
+	while((retval = gethostbyname_r(name,&hostbuf,tmphstbuf,hstbuflen,&hp,&herr)) == ERANGE)
+	{
+		/* Enlarge the buffer.  */
+		hstbuflen *= 2;
+		tmphstbuf = realloc(tmphstbuf, hstbuflen);
+		/* check realloc succeeds */
+		if(tmphstbuf == NULL)
+		{
+			Arcom_ESS_Error_Number = 418;
+			sprintf(Arcom_ESS_Error_String,"Socket_Get_Host_By_Name:"
+				"memory reallocation of tmphstbuf failed(%d).",hstbuflen);
+			return FALSE;
+		}
+#if LOGGING > 5
+		Arcom_ESS_Log_Format(LOG_VERBOSITY_VERBOSE,
+				     "Socket_Get_Host_By_Name:gethostbyname_r returned ERANGE:"
+				     "Increasing buffer size to %d.",hstbuflen);
+#endif /* LOGGING */
+	}/* while */
+#if LOGGING > 5
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERBOSE,"Socket_Get_Host_By_Name:"
+			     "gethostbyname_r loop exited with retval %d and hp %p.",retval,hp);
+#endif /* LOGGING */
+	if(retval != 0)
+	{
+		if(tmphstbuf != NULL)
+			free(tmphstbuf);
+		Arcom_ESS_Error_Number = 419;
+		sprintf(Arcom_ESS_Error_String,"Socket_Get_Host_By_Name:"
+			"gethostbyname_r failed to find host %s (%d).",name,herr);
+		return FALSE;
+	}
+	if(hp == NULL)
+	{
+		if(tmphstbuf != NULL)
+			free(tmphstbuf);
+		Arcom_ESS_Error_Number = 420;
+		sprintf(Arcom_ESS_Error_String,"Socket_Get_Host_By_Name:"
+			"gethostbyname_r returned NULL return pointer for hostname %s (%d).",name,herr);
+		return FALSE;
+	}
+	/* copy result */
+	(*host_addr_zero) = strdup(hp->h_addr_list[0]);
+	if((*host_addr_zero) == NULL)
+	{
+		if(tmphstbuf != NULL)
+			free(tmphstbuf);
+		Arcom_ESS_Error_Number = 421;
+		sprintf(Arcom_ESS_Error_String,"Socket_Get_Host_By_Name:"
+			"Failed to copy gethostbyname_r result string (%s).",hp->h_addr_list[0]);
+		return FALSE;
+	}
+	/* free buffer*/
+	if(tmphstbuf != NULL)
+		free(tmphstbuf);
+#if LOGGING > 5
+	Arcom_ESS_Log_Format(LOG_VERBOSITY_VERBOSE,"Socket_Get_Host_By_Name(%s) Finished.",name);
+#endif /* LOGGING */
+	return TRUE;
+}
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.4  2009/02/04 11:23:50  cjm
+** Changed log bits to log_udp verbosities.
+**
 ** Revision 1.3  2008/10/29 14:43:54  cjm
 ** Added socket flushing.
 **
