@@ -1,4 +1,4 @@
-# $Header: /home/cjm/cvs/arcom_ess/c/Makefile,v 1.3 2009-02-04 11:24:15 cjm Exp $
+# $Header: /home/cjm/cvs/arcom_ess/c/Makefile,v 1.4 2011-01-05 14:37:57 cjm Exp $
 
 include			../../Makefile.common
 include			../Makefile.common
@@ -33,7 +33,7 @@ JAVAOBJS	=	$(JAVASRCS:%.c=%.o)
 JAVADOCS 	= 	$(JAVASRCS:%.c=$(DOCSDIR)/%.html)
 LIBNAME		=	lib$(ARCOM_ESS_HOME)
 
-top: shared docs $(INCDIR)/ngat_serial_arcomess_ArcomESS.h 
+top: $(INCDIR)/ngat_serial_arcomess_ArcomESS.h shared docs 
 
 shared: $(LT_LIB_HOME)/$(LIBNAME).so
 
@@ -90,6 +90,9 @@ backup: tidy
 
 #
 # $Log: not supported by cvs2svn $
+# Revision 1.3  2009/02/04 11:24:15  cjm
+# Changed log bits to log_udp verbosities.
+#
 # Revision 1.2  2008/07/22 13:42:39  cjm
 # Fixed MAKEDEPENDFLAGS.
 #
