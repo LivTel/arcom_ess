@@ -1,5 +1,5 @@
 /* arcom_ess_general.h
-** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_general.h,v 1.3 2009-02-04 11:24:11 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_general.h,v 1.4 2011-01-05 14:30:09 cjm Exp $
 */
 
 #ifndef ARCOM_ESS_GENERAL_H
@@ -42,14 +42,14 @@ extern void Arcom_ESS_Error(void);
 extern void Arcom_ESS_Error_To_String(char *error_string);
 extern int Arcom_ESS_Get_Error_Number(void);
 extern void Arcom_ESS_Get_Current_Time_String(char *time_string,int string_length);
-extern void Arcom_ESS_Log_Format(int level,char *format,...);
-extern void Arcom_ESS_Log(int level,char *string);
-extern void Arcom_ESS_Set_Log_Handler_Function(void (*log_fn)(int level,char *string));
-extern void Arcom_ESS_Set_Log_Filter_Function(int (*filter_fn)(int level,char *string));
-extern void Arcom_ESS_Log_Handler_Stdout(int level,char *string);
+extern void Arcom_ESS_Log_Format(char *class,char *source,int level,char *format,...);
+extern void Arcom_ESS_Log(char *class,char *source,int level,char *string);
+extern void Arcom_ESS_Set_Log_Handler_Function(void (*log_fn)(char *class,char *source,int level,char *string));
+extern void Arcom_ESS_Set_Log_Filter_Function(int (*filter_fn)(char *class,char *source,int level,char *string));
+extern void Arcom_ESS_Log_Handler_Stdout(char *class,char *source,int level,char *string);
 extern void Arcom_ESS_Set_Log_Filter_Level(int level);
-extern int Arcom_ESS_Log_Filter_Level_Absolute(int level,char *string);
-extern int Arcom_ESS_Log_Filter_Level_Bitwise(int level,char *string);
+extern int Arcom_ESS_Log_Filter_Level_Absolute(char *class,char *source,int level,char *string);
+extern int Arcom_ESS_Log_Filter_Level_Bitwise(char *class,char *source,int level,char *string);
 extern char *Arcom_ESS_Replace_String(char *string,char *find_string,char *replace_string);
 
 /* external variables */

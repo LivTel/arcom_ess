@@ -1,6 +1,6 @@
 /* arcom_ess_interface.h
 ** Arcom ESS serial interface library.
-** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_interface.h,v 1.2 2008-10-29 14:45:35 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_interface.h,v 1.3 2011-01-05 14:30:09 cjm Exp $
 */
 #ifndef ARCOM_ESS_INTERFACE_H
 #define ARCOM_ESS_INTERFACE_H
@@ -40,20 +40,24 @@ enum ARCOM_ESS_INTERFACE_DEVICE_ID
 typedef struct Arcom_ESS_Interface_Handle_Struct Arcom_ESS_Interface_Handle_T;
 
 extern int Arcom_ESS_Interface_Handle_Create(Arcom_ESS_Interface_Handle_T **handle);
-extern int Arcom_ESS_Interface_Open(enum ARCOM_ESS_INTERFACE_DEVICE_ID device_id,char *device_name,int port_number,
-			      Arcom_ESS_Interface_Handle_T *handle);
-extern int Arcom_ESS_Interface_Close(Arcom_ESS_Interface_Handle_T *handle);
+extern int Arcom_ESS_Interface_Open(char *class,char *source,enum ARCOM_ESS_INTERFACE_DEVICE_ID device_id,
+				    char *device_name,int port_number,Arcom_ESS_Interface_Handle_T *handle);
+extern int Arcom_ESS_Interface_Close(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle);
 extern int Arcom_ESS_Interface_Handle_Destroy(Arcom_ESS_Interface_Handle_T **handle);
-extern int Arcom_ESS_Interface_Write(Arcom_ESS_Interface_Handle_T *handle,void* message,size_t message_length);
-extern int Arcom_ESS_Interface_Read(Arcom_ESS_Interface_Handle_T *handle,void* message,int message_length,
-				    int* bytes_read);
-extern int Arcom_ESS_Interface_Flush(Arcom_ESS_Interface_Handle_T *handle);
+extern int Arcom_ESS_Interface_Write(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle,void* message,
+				     size_t message_length);
+extern int Arcom_ESS_Interface_Read(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle,void* message,
+				    int message_length,int* bytes_read);
+extern int Arcom_ESS_Interface_Flush(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle);
 extern int Arcom_ESS_Interface_Mutex_Lock(Arcom_ESS_Interface_Handle_T *handle);
 extern int Arcom_ESS_Interface_Mutex_Unlock(Arcom_ESS_Interface_Handle_T *handle);
 
 #endif
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.2  2008/10/29 14:45:35  cjm
+** Added flush operation to interface.
+**
 ** Revision 1.1  2008/03/18 17:04:30  cjm
 ** Initial revision
 **

@@ -1,5 +1,5 @@
 /* arcom_ess_socket.h
-** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_socket.h,v 1.2 2008-10-29 14:45:35 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/include/arcom_ess_socket.h,v 1.3 2011-01-05 14:30:09 cjm Exp $
 */
 
 #ifndef ARCOM_ESS_SOCKET_H
@@ -26,10 +26,12 @@ typedef struct Arcom_ESS_Socket_Handle_Struct
 	int Socket_Fd;
 } Arcom_ESS_Socket_Handle_T;
 
-extern int Arcom_ESS_Socket_Open(Arcom_ESS_Socket_Handle_T *handle);
-extern int Arcom_ESS_Socket_Close(Arcom_ESS_Socket_Handle_T *handle);
-extern int Arcom_ESS_Socket_Write(Arcom_ESS_Socket_Handle_T handle,void *message,size_t message_length);
-extern int Arcom_ESS_Socket_Read(Arcom_ESS_Socket_Handle_T handle,void *message,int message_length,int *bytes_read);
-extern int Arcom_ESS_Socket_Flush(Arcom_ESS_Socket_Handle_T handle);
+extern int Arcom_ESS_Socket_Open(char *class,char *source,Arcom_ESS_Socket_Handle_T *handle);
+extern int Arcom_ESS_Socket_Close(char *class,char *source,Arcom_ESS_Socket_Handle_T *handle);
+extern int Arcom_ESS_Socket_Write(char *class,char *source,Arcom_ESS_Socket_Handle_T handle,void *message,
+				  size_t message_length);
+extern int Arcom_ESS_Socket_Read(char *class,char *source,Arcom_ESS_Socket_Handle_T handle,void *message,
+				 int message_length,int *bytes_read);
+extern int Arcom_ESS_Socket_Flush(char *class,char *source,Arcom_ESS_Socket_Handle_T handle);
 
 #endif

@@ -1,6 +1,6 @@
 /* ngat_serial_arcomess_ArcomESS.c
 ** implementation of Java Class ngat.serial.arcomess.ArcomESS native interfaces.
-** $Header: /home/cjm/cvs/arcom_ess/c/ngat_serial_arcomess_ArcomESS.c,v 1.2 2009-02-05 11:38:10 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/ngat_serial_arcomess_ArcomESS.c,v 1.3 2011-01-05 14:29:20 cjm Exp $
 */
 /**
  * ngat_serial_arcomess_ArcomESS.c is the 'glue' between libarcom_ess, 
@@ -8,7 +8,7 @@
  * a Java Class to drive the server. ArcomESS specifically
  * contains all the native C routines corresponding to native methods in Java.
  * @author Chris Mottram LJMU
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes
@@ -56,7 +56,7 @@ struct Handle_Map_Struct
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: ngat_serial_arcomess_ArcomESS.c,v 1.2 2009-02-05 11:38:10 cjm Exp $";
+static char rcsid[] = "$Id: ngat_serial_arcomess_ArcomESS.c,v 1.3 2011-01-05 14:29:20 cjm Exp $";
 
 /**
  * Copy of the java virtual machine pointer, used for logging back up to the Java layer from C.
@@ -68,7 +68,8 @@ static JavaVM *java_vm = NULL;
  */
 static jobject logger = NULL;
 /**
- * Cached reference to the "ngat.util.logging.Logger" class's log(int level,String message) method.
+ * Cached reference to the "ngat.util.logging.Logger" class's 
+ * log(int level,String clazz,String source,String message) method.
  * Used to log C layer log messages, in conjunction with the logger's object reference logger.
  * @see #logger
  */
@@ -91,7 +92,7 @@ static struct Handle_Map_Struct Handle_Map_List[HANDLE_MAP_SIZE] =
 /* internal routines */
 static void ArcomESS_Throw_Exception(JNIEnv *env,jobject obj,char *function_name);
 static void ArcomESS_Throw_Exception_String(JNIEnv *env,jobject obj,char *function_name,char *error_string);
-static void ArcomESS_Log_Handler(int level,char *string);
+static void ArcomESS_Log_Handler(char *class,char *source,int level,char *string);
 static int ArcomESS_Handle_Map_Add(JNIEnv *env,jobject instance,Arcom_ESS_Interface_Handle_T* interface_handle);
 static int ArcomESS_Handle_Map_Delete(JNIEnv *env,jobject instance);
 
@@ -148,7 +149,10 @@ JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_initialiseLoggerRefere
 		return;
 /* get relevant method id to call */
 /* log(int level,java/lang/String message) */
-	log_method_id = (*env)->GetMethodID(env,cls,"log","(ILjava/lang/String;)V");
+/*      log_method_id = (*env)->GetMethodID(env,cls,"log","(ILjava/lang/String;)V");*/
+/* log(int level,java/lang/String clazz,java/lang/String source,java/lang/String message) */
+	log_method_id = (*env)->GetMethodID(env,cls,"log",
+					    "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 	if(log_method_id == NULL)
 	{
 		/* One of the following exceptions has been thrown:
@@ -261,7 +265,7 @@ JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_
 /**
  * Class:     ngat_serial_arcomess_ArcomESS<br>
  * Method:    Arcom_ESS_Interface_Open<br>
- * Signature: (ILjava/lang/String;I)V<br>
+ * Signature: (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;I)V<br>
  * @see arcom_ess_interface.html#ARCOM_ESS_INTERFACE_DEVICE_ID
  * @see arcom_ess_interface.html#Arcom_ESS_Interface_Handle_T
  * @see arcom_ess_interface.html#Arcom_ESS_Interface_Open
@@ -269,24 +273,35 @@ JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_
  * @see #ArcomESS_Handle_Map_Find
  */
 JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_1Open(JNIEnv *env, jobject obj, 
-					     jint device_id, jstring device_name_jstring, jint port_number)
+      jstring class_jstring, jstring source_jstring, jint device_id, jstring device_name_jstring, jint port_number)
 {
 	Arcom_ESS_Interface_Handle_T *handle = NULL;
 	const char *device_name = NULL;
+	const char *class = NULL;
+	const char *source = NULL;
 	int retval;
 
 	/* get interface handle from ArcomESS instance map */
 	if(!ArcomESS_Handle_Map_Find(env,obj,&handle))
 		return; /* ArcomESS_Handle_Map_Find throws an exception on failure */
-	/* Get the device name from a java string to a c null terminated string
-	** If the java String is null the device_name should be null as well */
+	/* Change the java strings to a c null terminated string
+	** If the java String is null the C string should be null as well */
 	if(device_name_jstring != NULL)
 		device_name = (*env)->GetStringUTFChars(env,device_name_jstring,0);
-	retval = Arcom_ESS_Interface_Open((enum ARCOM_ESS_INTERFACE_DEVICE_ID)device_id,(char*)device_name,
-				    (int)port_number,handle);
-	/* If we created the device_name string we need to free the memory it uses */
+	if(class_jstring != NULL)
+		class = (*env)->GetStringUTFChars(env,class_jstring,0);
+	if(source_jstring != NULL)
+		source = (*env)->GetStringUTFChars(env,source_jstring,0);
+	/* do open */
+	retval = Arcom_ESS_Interface_Open((char*)class,(char*)source,(enum ARCOM_ESS_INTERFACE_DEVICE_ID)device_id,
+					  (char*)device_name,(int)port_number,handle);
+	/* If we created the C strings we need to free the memory it uses */
 	if(device_name_jstring != NULL)
 		(*env)->ReleaseStringUTFChars(env,device_name_jstring,device_name);
+	if(class_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,class_jstring,class);
+	if(source_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,source_jstring,source);
 	/* if an error occured throw an exception. */
 	if(retval == FALSE)
 	{
@@ -298,21 +313,36 @@ JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_
 /**
  * Class:     ngat_serial_arcomess_ArcomESS<br>
  * Method:    Arcom_ESS_Interface_Close<br>
- * Signature: ()V<br>
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)V<br>
  * @see #ArcomESS_Throw_Exception
  * @see #ArcomESS_Handle_Map_Find
  * @see arcom_ess_interface.html#Arcom_ESS_Interface_Handle_T
  * @see arcom_ess_interface.html#Arcom_ESS_Interface_Close
  */
-JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_1Close(JNIEnv *env, jobject obj)
+JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_1Close(JNIEnv *env, jobject obj,
+							       jstring class_jstring, jstring source_jstring)
 {
 	Arcom_ESS_Interface_Handle_T *handle = NULL;
+	const char *class = NULL;
+	const char *source = NULL;
 	int retval;
 
 	/* get interface handle from ArcomESS instance map */
 	if(!ArcomESS_Handle_Map_Find(env,obj,&handle))
 		return; /* ArcomESS_Handle_Map_Find throws an exception on failure */
-	retval = Arcom_ESS_Interface_Close(handle);
+	/* Change the java strings to a c null terminated string
+	** If the java String is null the C string should be null as well */
+	if(class_jstring != NULL)
+		class = (*env)->GetStringUTFChars(env,class_jstring,0);
+	if(source_jstring != NULL)
+		source = (*env)->GetStringUTFChars(env,source_jstring,0);
+	/* do close */
+	retval = Arcom_ESS_Interface_Close((char*)class,(char*)source,handle);
+	/* If we created the C strings we need to free the memory it uses */
+	if(class_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,class_jstring,class);
+	if(source_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,source_jstring,source);
 	/* if an error occured throw an exception. */
 	if(retval == FALSE)
 	{
@@ -324,15 +354,18 @@ JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_
 /**
  * Class:     ngat_serial_arcomess_ArcomESS<br>
  * Method:    Arcom_ESS_Interface_Read<br>
- * Signature: ()Ljava/lang/String;<br>
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;<br>
  * @see #ArcomESS_Throw_Exception
  * @see #ArcomESS_Handle_Map_Find
  * @see arcom_ess_interface.html#Arcom_ESS_Interface_Handle_T
  * @see arcom_ess_interface.html#Arcom_ESS_Interface_Read
  */
-JNIEXPORT jstring JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_1Read(JNIEnv *env, jobject obj)
+JNIEXPORT jstring JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_1Read(JNIEnv *env, jobject obj,
+							       jstring class_jstring, jstring source_jstring)
 {
 	Arcom_ESS_Interface_Handle_T *handle = NULL;
+	const char *class = NULL;
+	const char *source = NULL;
 	char buff[256];
 	int retval,bytes_read;
 	jstring retstring;
@@ -340,7 +373,19 @@ JNIEXPORT jstring JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interfa
 	/* get interface handle from ArcomESS instance map */
 	if(!ArcomESS_Handle_Map_Find(env,obj,&handle))
 		return NULL; /* ArcomESS_Handle_Map_Find throws an exception on failure */
-	retval = Arcom_ESS_Interface_Read(handle,buff,255,&bytes_read);
+	/* Change the java strings to a c null terminated string
+	** If the java String is null the C string should be null as well */
+	if(class_jstring != NULL)
+		class = (*env)->GetStringUTFChars(env,class_jstring,0);
+	if(source_jstring != NULL)
+		source = (*env)->GetStringUTFChars(env,source_jstring,0);
+	/* do read */
+	retval = Arcom_ESS_Interface_Read((char*)class,(char*)source,handle,buff,255,&bytes_read);
+	/* If we created the C strings we need to free the memory it uses */
+	if(class_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,class_jstring,class);
+	if(source_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,source_jstring,source);
 	/* if an error occured throw an exception. */
 	if(retval == FALSE)
 	{
@@ -356,7 +401,7 @@ JNIEXPORT jstring JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interfa
 /**
  * Class:     ngat_serial_arcomess_ArcomESS<br>
  * Method:    Arcom_ESS_Interface_Write<br>
- * Signature: (Ljava/lang/String;)V<br>
+ * Signature: Ljava/lang/String;Ljava/lang/String;(Ljava/lang/String;)V<br>
  * @see #ArcomESS_Throw_Exception
  * @see #ArcomESS_Throw_Exception_String
  * @see #ArcomESS_Handle_Map_Find
@@ -364,17 +409,23 @@ JNIEXPORT jstring JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interfa
  * @see arcom_ess_interface.html#Arcom_ESS_Interface_Write
  */
 JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_1Write(JNIEnv *env, jobject obj, 
-										       jstring s_jstring)
+					   jstring class_jstring, jstring source_jstring,jstring s_jstring)
 {
 	Arcom_ESS_Interface_Handle_T *handle = NULL;
+	const char *class = NULL;
+	const char *source = NULL;
 	int retval;
 	const char *c_string = NULL;
 
 	/* get interface handle from ArcomESS instance map */
 	if(!ArcomESS_Handle_Map_Find(env,obj,&handle))
 		return; /* ArcomESS_Handle_Map_Find throws an exception on failure */
-	/* Get the string from a java string to a c null terminated string
-	** If the java String is null the string should be null as well */
+	/* Change the java strings to a c null terminated string
+	** If the java String is null the C string should be null as well */
+	if(class_jstring != NULL)
+		class = (*env)->GetStringUTFChars(env,class_jstring,0);
+	if(source_jstring != NULL)
+		source = (*env)->GetStringUTFChars(env,source_jstring,0);
 	if(s_jstring != NULL)
 		c_string = (*env)->GetStringUTFChars(env,s_jstring,0);
 	if(c_string == NULL)
@@ -384,8 +435,12 @@ JNIEXPORT void JNICALL Java_ngat_serial_arcomess_ArcomESS_Arcom_1ESS_1Interface_
 		return;
 	}
 	/* do write */
-	retval = Arcom_ESS_Interface_Write(handle,(void *)c_string,strlen(c_string));
-	/* If we created the string we need to free the memory it uses */
+	retval = Arcom_ESS_Interface_Write((char*)class,(char*)source,handle,(void *)c_string,strlen(c_string));
+	/* If we created the C strings we need to free the memory it uses */
+	if(class_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,class_jstring,class);
+	if(source_jstring != NULL)
+		(*env)->ReleaseStringUTFChars(env,source_jstring,source);
 	if(s_jstring != NULL)
 		(*env)->ReleaseStringUTFChars(env,s_jstring,c_string);
 	/* if an error occured throw an exception. */
@@ -527,20 +582,27 @@ static void ArcomESS_Throw_Exception_String(JNIEnv *env,jobject obj,char *functi
 /**
  * libarcom_ess Log Handler for the Java layer interface. 
  * This calls the ngat.serial.arcomess.ArcomESS logger's 
- * log(int level,String message) method with the parameters supplied to this routine.
+ * log(int level,String clazz,String source,String message) method with the parameters supplied 
+ * to this routine.
  * If the logger instance is NULL, or the log_method_id is NULL the call is not made.
  * Otherwise, A java.lang.String instance is constructed from the string parameter,
- * and the JNI CallVoidMEthod routine called to call log().
+ * and the JNI CallVoidMethod routine called to call log().
+ * @param class A string representing the class that caused this message to be logged - used to fill in the 
+ *        class field in the log record.
+ * @param source A string representing the source that caused this message to be logged - used to fill in the 
+ *        source field in the log record.
  * @param level The log level of the message.
  * @param string The message to log.
  * @see #java_vm
  * @see #logger
  * @see #log_method_id
  */
-static void ArcomESS_Log_Handler(int level,char *string)
+static void ArcomESS_Log_Handler(char *class,char *source,int level,char *string)
 {
 	JNIEnv *env = NULL;
 	jstring java_string = NULL;
+	jstring java_class = NULL;
+	jstring java_source = NULL;
 
 	if(logger == NULL)
 	{
@@ -571,8 +633,16 @@ static void ArcomESS_Log_Handler(int level,char *string)
 	}
 /* convert C to Java String */
 	java_string = (*env)->NewStringUTF(env,string);
+	if(class != NULL)
+		java_class = (*env)->NewStringUTF(env,class);
+	else
+		java_class = (*env)->NewStringUTF(env,"-");
+	if(source != NULL)
+		java_source = (*env)->NewStringUTF(env,source);
+	else
+		java_source = (*env)->NewStringUTF(env,"-");
 /* call log method on logger instance */
-	(*env)->CallVoidMethod(env,logger,log_method_id,(jint)level,java_string);
+	(*env)->CallVoidMethod(env,logger,log_method_id,(jint)level,java_class,java_source,java_string);
 }
 
 /**
@@ -728,6 +798,9 @@ int ArcomESS_Handle_Map_Find(JNIEnv *env,jobject instance,Arcom_ESS_Interface_Ha
 }
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.2  2009/02/05 11:38:10  cjm
+** Swapped Bitwise for Absolute logging levels.
+**
 ** Revision 1.1  2008/03/18 17:04:22  cjm
 ** Initial revision
 **

@@ -1,12 +1,12 @@
 /* arcom_ess_interface.c
 ** Arcom ESS interface library
-** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_interface.c,v 1.2 2008-10-29 14:43:54 cjm Exp $
+** $Header: /home/cjm/cvs/arcom_ess/c/arcom_ess_interface.c,v 1.3 2011-01-05 14:29:20 cjm Exp $
 */
 /**
  * Serial device independant interface routines.
  * Set the interface to be either Serial or Socket and Open/Close/Read/Write calls are directed as appropriate.
  * @author Chris Mottram
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -66,7 +66,7 @@ struct Arcom_ESS_Interface_Handle_Struct
 /**
  * Revision Control System identifier.
  */
-static char rcsid[] = "$Id: arcom_ess_interface.c,v 1.2 2008-10-29 14:43:54 cjm Exp $";
+static char rcsid[] = "$Id: arcom_ess_interface.c,v 1.3 2011-01-05 14:29:20 cjm Exp $";
 
 /* =======================================
 **  external functions 
@@ -102,6 +102,8 @@ int Arcom_ESS_Interface_Handle_Create(Arcom_ESS_Interface_Handle_T **handle)
 
 /**
  * Routine to open a connection to the specified interface.
+ * @param class The class parameter for logging.
+ * @param source The source parameter for logging.
  * @param device_id Which sort of device to open, should be one of: ARCOM_ESS_INTERFACE_DEVICE_SERIAL, 
  *        ARCOM_ESS_INTERFACE_DEVICE_SOCKET.
  * @param device_name The name of the device. For serial devices, this is something like "/dev/ttyS0", 
@@ -115,8 +117,8 @@ int Arcom_ESS_Interface_Handle_Create(Arcom_ESS_Interface_Handle_T **handle)
  * @see arcom_ess_socket.html#Arcom_ESS_Socket_Open
  * @see arcom_ess_serial.html#Arcom_ESS_Serial_Open
  */
-int Arcom_ESS_Interface_Open(enum ARCOM_ESS_INTERFACE_DEVICE_ID device_id,char *device_name,int port_number,
-			      Arcom_ESS_Interface_Handle_T *handle)
+int Arcom_ESS_Interface_Open(char *class,char *source,enum ARCOM_ESS_INTERFACE_DEVICE_ID device_id,char *device_name,
+			     int port_number,Arcom_ESS_Interface_Handle_T *handle)
 {
 	if(!ARCOM_ESS_INTERFACE_IS_INTERFACE_DEVICE(device_id))
 	{
@@ -150,7 +152,7 @@ int Arcom_ESS_Interface_Open(enum ARCOM_ESS_INTERFACE_DEVICE_ID device_id,char *
 				return FALSE;
 			}
 			strcpy(handle->Handle.Serial.Device_Name,device_name);
-			return Arcom_ESS_Serial_Open(&(handle->Handle.Serial));
+			return Arcom_ESS_Serial_Open(class,source,&(handle->Handle.Serial));
 		case ARCOM_ESS_INTERFACE_DEVICE_SOCKET:
 			if(strlen(device_name) > ARCOM_ESS_INTERFACE_DEVICE_NAME_STRING_LENGTH)
 			{
@@ -161,7 +163,7 @@ int Arcom_ESS_Interface_Open(enum ARCOM_ESS_INTERFACE_DEVICE_ID device_id,char *
 			}
 			strcpy(handle->Handle.Socket.Address,device_name);
 			handle->Handle.Socket.Port_Number = port_number;
-			return Arcom_ESS_Socket_Open(&(handle->Handle.Socket));
+			return Arcom_ESS_Socket_Open(class,source,&(handle->Handle.Socket));
 		default:
 			Arcom_ESS_Error_Number = 106;
 			sprintf(Arcom_ESS_Error_String,"Arcom_ESS_Interface_Open failed:Illegal device selected(%d).",
@@ -172,13 +174,15 @@ int Arcom_ESS_Interface_Open(enum ARCOM_ESS_INTERFACE_DEVICE_ID device_id,char *
 
 /**
  * Routine to close a connection to the specified interface.
+ * @param class The class parameter for logging.
+ * @param source The source parameter for logging.
  * @param handle The connection information spcfying which connection to close.
  * @return The routine returns TRUE on success and FALSE on failure.
  * @see #Arcom_ESS_Interface_Handle_T
  * @see arcom_ess_socket.html#Arcom_ESS_Socket_Close
  * @see arcom_ess_serial.html#Arcom_ESS_Serial_Close
  */
-int Arcom_ESS_Interface_Close(Arcom_ESS_Interface_Handle_T *handle)
+int Arcom_ESS_Interface_Close(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle)
 {
 	/* check parameters */
 	if(handle == NULL)
@@ -191,11 +195,11 @@ int Arcom_ESS_Interface_Close(Arcom_ESS_Interface_Handle_T *handle)
 	switch(handle->Interface_Device)
 	{
 		case ARCOM_ESS_INTERFACE_DEVICE_SERIAL:
-			if(!Arcom_ESS_Serial_Close(&(handle->Handle.Serial)))
+			if(!Arcom_ESS_Serial_Close(class,source,&(handle->Handle.Serial)))
 				return FALSE;
 			break;
 		case ARCOM_ESS_INTERFACE_DEVICE_SOCKET:
-			if(!Arcom_ESS_Socket_Close(&(handle->Handle.Socket)))
+			if(!Arcom_ESS_Socket_Close(class,source,&(handle->Handle.Socket)))
 				return FALSE;
 			break;
 		default:
@@ -236,6 +240,8 @@ int Arcom_ESS_Interface_Handle_Destroy(Arcom_ESS_Interface_Handle_T **handle)
 
 /**
  * Routine to write data to an open connection to the specified interface.
+ * @param class The class parameter for logging.
+ * @param source The source parameter for logging.
  * @param handle The handle specifying which connection to write to.
  * @param message A buffer containing some data to be written.
  * @param message_length The length of the buffer.
@@ -244,7 +250,7 @@ int Arcom_ESS_Interface_Handle_Destroy(Arcom_ESS_Interface_Handle_T **handle)
  * @see arcom_ess_socket.html#Arcom_ESS_Socket_Write
  * @see arcom_ess_serial.html#Arcom_ESS_Serial_Write
  */
-int Arcom_ESS_Interface_Write(Arcom_ESS_Interface_Handle_T *handle,void* message,size_t message_length)
+int Arcom_ESS_Interface_Write(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle,void* message,size_t message_length)
 {
 	if(handle == NULL)
 	{
@@ -262,11 +268,11 @@ int Arcom_ESS_Interface_Write(Arcom_ESS_Interface_Handle_T *handle,void* message
 	switch(handle->Interface_Device)
 	{
 		case ARCOM_ESS_INTERFACE_DEVICE_SERIAL:
-			if(!Arcom_ESS_Serial_Write(handle->Handle.Serial,message,message_length))
+			if(!Arcom_ESS_Serial_Write(class,source,handle->Handle.Serial,message,message_length))
 				return FALSE;
 			break;
 		case ARCOM_ESS_INTERFACE_DEVICE_SOCKET:
-			if(!Arcom_ESS_Socket_Write(handle->Handle.Socket,message,message_length))
+			if(!Arcom_ESS_Socket_Write(class,source,handle->Handle.Socket,message,message_length))
 				return FALSE;
 			break;
 		default:
@@ -280,6 +286,8 @@ int Arcom_ESS_Interface_Write(Arcom_ESS_Interface_Handle_T *handle,void* message
 
 /**
  * Routine to read data to an open connection to the specified interface.
+ * @param class The class parameter for logging.
+ * @param source The source parameter for logging.
  * @param handle The handle specifying which connection to write to.
  * @param message A pointer to the buffer to write read data into.
  * @param message_length The length of the buffer.
@@ -290,7 +298,7 @@ int Arcom_ESS_Interface_Write(Arcom_ESS_Interface_Handle_T *handle,void* message
  * @see arcom_ess_socket.html#Arcom_ESS_Socket_Read
  * @see arcom_ess_serial.html#Arcom_ESS_Serial_Read
  */
-int Arcom_ESS_Interface_Read(Arcom_ESS_Interface_Handle_T *handle,void* message,int message_length,int* bytes_read)
+int Arcom_ESS_Interface_Read(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle,void* message,int message_length,int* bytes_read)
 {
 	if(handle == NULL)
 	{
@@ -308,11 +316,13 @@ int Arcom_ESS_Interface_Read(Arcom_ESS_Interface_Handle_T *handle,void* message,
 	switch(handle->Interface_Device)
 	{
 		case ARCOM_ESS_INTERFACE_DEVICE_SERIAL:
-			if(!Arcom_ESS_Serial_Read(handle->Handle.Serial,message,message_length,bytes_read))
+			if(!Arcom_ESS_Serial_Read(class,source,handle->Handle.Serial,message,message_length,
+						  bytes_read))
 				return FALSE;
 			break;
 		case ARCOM_ESS_INTERFACE_DEVICE_SOCKET:
-			if(!Arcom_ESS_Socket_Read(handle->Handle.Socket,message,message_length,bytes_read))
+			if(!Arcom_ESS_Socket_Read(class,source,handle->Handle.Socket,message,message_length,
+						  bytes_read))
 				return FALSE;
 			break;
 		default:
@@ -328,13 +338,15 @@ int Arcom_ESS_Interface_Read(Arcom_ESS_Interface_Handle_T *handle,void* message,
  * Try to flush any unread data from the file descriptor by repeated read's until read returns 0.
  * We wait a small delay before reading in case  some data is in the process of arriving.
  * The flushing is currently only implemented for socket connections.
+ * @param class The class parameter for logging.
+ * @param source The source parameter for logging.
  * @param handle The handle specifying which connection to flush.
  * @return The routine returns TRUE on success and FALSE on failure.
  * @see #Arcom_ESS_Interface_Handle_T
  * @see arcom_ess_socket.html#Arcom_ESS_Socket_Flush
  * @see arcom_ess_serial.html#Arcom_ESS_Serial_Read
  */
-int Arcom_ESS_Interface_Flush(Arcom_ESS_Interface_Handle_T *handle)
+int Arcom_ESS_Interface_Flush(char *class,char *source,Arcom_ESS_Interface_Handle_T *handle)
 {
 	if(handle == NULL)
 	{
@@ -349,7 +361,7 @@ int Arcom_ESS_Interface_Flush(Arcom_ESS_Interface_Handle_T *handle)
 			/* do nothing for flush */
 			break;
 		case ARCOM_ESS_INTERFACE_DEVICE_SOCKET:
-			if(!Arcom_ESS_Socket_Flush(handle->Handle.Socket))
+			if(!Arcom_ESS_Socket_Flush(class,source,handle->Handle.Socket))
 				return FALSE;
 			break;
 		default:
@@ -421,6 +433,9 @@ int Arcom_ESS_Interface_Mutex_Unlock(Arcom_ESS_Interface_Handle_T *handle)
 
 /*
 ** $Log: not supported by cvs2svn $
+** Revision 1.2  2008/10/29 14:43:54  cjm
+** Added flush operation to interface.
+**
 ** Revision 1.1  2008/03/18 17:04:22  cjm
 ** Initial revision
 **
