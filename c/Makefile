@@ -3,7 +3,8 @@
 include			../../Makefile.common
 include			../Makefile.common
 
-INCDIR = $(ARCOM_ESS_SRC_HOME)/include
+INCDIR 	= $(ARCOM_ESS_SRC_HOME)/include
+BINDIR	= $(ARCOM_ESS_BIN_HOME)/c/$(HOSTTYPE)
 DOCSDIR = $(ARCOM_ESS_DOC_HOME)/cdocs
 
 # Do we want to enable logging?
@@ -20,16 +21,16 @@ MUTEXCFLAGS = -DARCOM_ESS_MUTEXED=1
 TCP_NODELAY = 
 
 CFLAGS = -g $(CCHECKFLAG) -I$(INCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR) -L$(LT_LIB_HOME) $(MUTEXCFLAGS) \
-	$(TCP_NODELAY) $(LOGGINGCFLAGS) $(LOG_UDP_CFLAGS)
+	$(TCP_NODELAY) $(LOGGINGCFLAGS) $(LOG_UDP_CFLAGS) $(SHARED_LIB_CFLAGS) 
 
 LINTFLAGS = -I$(INCDIR) -I$(JNIINCDIR) -I$(JNIMDINCDIR)
 DOCFLAGS = -static
 SRCS 		= 	arcom_ess_general.c arcom_ess_serial.c arcom_ess_socket.c arcom_ess_interface.c
 HEADERS		=	$(SRCS:%.c=%.h)
-OBJS		=	$(SRCS:%.c=%.o)
+OBJS		=	$(SRCS:%.c=$(BINDIR)/%.o)
 DOCS 		= 	$(SRCS:%.c=$(DOCSDIR)/%.html)
 JAVASRCS 	= 	$(SRCS) ngat_serial_arcomess_ArcomESS.c
-JAVAOBJS	=	$(JAVASRCS:%.c=%.o)
+JAVAOBJS	=	$(JAVASRCS:%.c=$(BINDIR)/%.o)
 JAVADOCS 	= 	$(JAVASRCS:%.c=$(DOCSDIR)/%.html)
 LIBNAME		=	lib$(ARCOM_ESS_HOME)
 
@@ -39,6 +40,9 @@ shared: $(LT_LIB_HOME)/$(LIBNAME).so
 
 $(LT_LIB_HOME)/$(LIBNAME).so: $(JAVAOBJS)
 	cc $(CCSHAREDFLAG) $(CFLAGS) $(JAVAOBJS) -o $@ $(TIMELIB) 
+
+$(BINDIR)/%.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@  
 
 static: $(LT_LIB_HOME)/$(LIBNAME).a
 
@@ -60,14 +64,6 @@ $(JAVADOCS): $(JAVASRCS)
 	-$(CDOC) -d $(DOCSDIR) -h $(INCDIR) $(DOCFLAGS) $(JAVASRCS)
 
 $(JAVADOCS) : $(JAVASRCS)
-
-checkout:
-	-$(CO) $(CO_OPTIONS) $(JAVASRCS)
-	-(cd $(INCDIR); $(CO) $(CO_OPTIONS) $(HEADERS);)
-
-checkin:
-	-$(CI) $(CI_OPTIONS) $(JAVASRCS)
-	-(cd $(INCDIR); $(CI) $(CI_OPTIONS) $(HEADERS);)
 
 staticdepend:
 	makedepend $(MAKEDEPENDFLAGS) -- $(CFLAGS) -- $(SRCS)
