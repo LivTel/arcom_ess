@@ -1,0 +1,15 @@
+# $Header: /home/cjm/cvs/arcom_ess/Makefile.common,v 1.1 2023-03-21 13:16:51 cjm Exp $
+
+ARCOM_ESS_HOME			=	arcom_ess
+ARCOM_ESS_SRC_HOME		= 	$(LT_SRC_HOME)/$(ARCOM_ESS_HOME)
+ARCOM_ESS_BIN_HOME		= 	$(LT_BIN_HOME)/$(ARCOM_ESS_HOME)
+ARCOM_ESS_DOC_HOME		= 	$(LT_DOC_HOME)/$(ARCOM_ESS_HOME)
+
+# log_udp library (log_udp.h is included for verbosity settings)
+LOG_UDP_HOME		= log_udp
+LOG_UDP_SRC_HOME	= $(LT_SRC_HOME)/$(LOG_UDP_HOME)
+LOG_UDP_CFLAGS		= -I$(LOG_UDP_SRC_HOME)/include
+
+#
+# $Log: not supported by cvs2svn $
+#

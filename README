@@ -1,0 +1,4 @@
+Small interface library.
+This allows libraries talking to serial devices, to select whether to talk to them
+directly over a serial link, or indirectly via an Arcom ESS (Ethernet Serial Server).
+
